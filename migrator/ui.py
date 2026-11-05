@@ -28,8 +28,6 @@ import os
 import sys
 import threading
 import time
-from contextlib import contextmanager
-from typing import Iterator
 
 from rich.console import Console
 from rich.progress import Progress, ProgressColumn, SpinnerColumn, TextColumn
@@ -175,15 +173,6 @@ class Spinner:
         """当前是否有动画行在跑。"""
         return self._message is not None
 
-    @contextmanager
-    def working(self, message: str = "", *, fg: str | None = None) -> Iterator[Spinner]:
-        """`with spinner.working("...")` 形式的糖，异常路径也会收线。"""
-        self.start(message, fg=fg)
-        try:
-            yield self
-        finally:
-            self.stop()
-
     # ---------------------------------------------------------------- 内部
     def _ensure_task(self) -> int:
         """懒启动 Progress：真要画动画时才占一个 live 区。"""
@@ -247,8 +236,3 @@ def log(message: str, *, fg: str | None = None) -> None:
 def stop(message: str | None = None, *, fg: str | None = None) -> None:
     """落定当前行并停止动画，见 Spinner.stop。"""
     spinner.stop(message, fg=fg)
-
-
-def working(message: str = "", *, fg: str | None = None) -> Iterator[Spinner]:
-    """`with working("..."):` 形式的糖。"""
-    return spinner.working(message, fg=fg)
