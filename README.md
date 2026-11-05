@@ -103,6 +103,37 @@ python main.py migrate --all --only repo-a,repo-b
 python main.py migrate your-name/my-repo --dry-run
 ```
 
+## 等待动画
+
+克隆、推送、逐个建 Issue 这些步骤动辄几十秒，运行时会在终端上转一个指示器，并把它当前在哪一步、这一步已经花了多久直接写在行尾：
+
+```
+  · 镜像克隆 https://gitee.com/your-name/my-repo.git  8.4s
+  · 本地镜像: 3 个分支 / 12 个 tag
+  · 推送全部分支与 tag -> https://github.com/you/my-repo.git  21.7s
+  · 迁移 26 个 Issue
+    - #3 已存在，跳过：修复登录失败
+⠹ 迁移 26 个 Issue  6s
+```
+
+每一行都是「上一步跑完后定格」的，所以既是过程日志，也是一张耗时表；5 秒内完成的步骤不显示秒数，免得满屏 `0.0s`。
+
+不适用的场景会自动关闭，不需要额外配置：
+
+| 场景 | 行为 |
+| --- | --- |
+| 输出被重定向（管道、写文件） | 自动关闭，退回逐行输出，不会往文件里塞 `\r` |
+| `CI=true` 或 `TERM=dumb` | 自动关闭 |
+| `list --json` | 动画和过程日志全部静音，stdout 只有 JSON |
+| `--no-spinner` | 手动关闭；写在子命令前后都行 |
+
+两个可选环境变量：
+
+```bash
+SPINNER_ASCII=1   # 字体显示不出盲文点时换成 |/-\
+NO_SPINNER=1      # 等价于 --no-spinner
+```
+
 ## 参数速查
 
 | 参数 | 说明 |
@@ -122,6 +153,7 @@ python main.py migrate your-name/my-repo --dry-run
 | `--dry-run` | 只打印计划 |
 | `--yes, -y` | 批量迁移时跳过确认 |
 | `--env-file` | 指定 .env 路径 |
+| `--no-spinner` | 关闭等待动画（默认在非交互环境自动关闭） |
 
 默认会跳过目标仓库中已存在同名 Issue，所以中断后重跑是安全的（断点续传）。
 
@@ -155,4 +187,5 @@ migrator/
   git_ops.py           git 命令封装（镜像克隆、强推、凭证注入、LFS）
   http.py              httpx 客户端基类（重试、限流退避、分页）
   config.py            .env 加载（python-dotenv，环境变量优先）
+  ui.py                等待动画与日志输出（单行刷新 + 定格耗时）
 ```

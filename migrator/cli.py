@@ -22,6 +22,7 @@ from typing import Annotated
 
 import typer
 
+from . import ui
 from .config import load_env_file
 from .gitee import GiteeClient
 from .github import GithubClient
@@ -55,6 +56,20 @@ EnvFileOpt = Annotated[
     str | None, typer.Option("--env-file", help="指定 .env 文件路径，默认读取当前目录 .env")
 ]
 
+# 子命令里也放一份 --no-spinner：习惯把选项写在命令后面的人不会踩坑
+SpinnerOpt = Annotated[
+    bool, typer.Option("--no-spinner", help="关闭等待动画（重定向/CI 环境会自动关闭）")
+]
+
+
+@app.callback()
+def _global_options(no_spinner: SpinnerOpt = False) -> None:
+    """把 Gitee 仓库迁移到 GitHub。"""
+    # 放在 callback 里，`main.py --no-spinner migrate ...` 这种写法也能用；
+    # 子命令里还各有一份同名选项，覆盖 `main.py migrate ... --no-spinner`。
+    if no_spinner:
+        ui.configure(False)
+
 
 def _setup_stdout() -> None:
     """Windows 控制台默认不是 UTF-8，中文和 emoji 会抛 UnicodeEncodeError。"""
@@ -73,13 +88,28 @@ def _load_env(env_file: str | None) -> None:
     """
     loaded = load_env_file(env_file)
     if loaded:
-        typer.echo(f"已加载环境变量: {loaded}")
+        # 走 stderr：这是诊断信息，不能混进 list --json 的 stdout
+        typer.echo(f"已加载环境变量: {loaded}", err=True)
     elif env_file:
         typer.secho(f"! 指定的 .env 不存在: {env_file}", fg=typer.colors.YELLOW, err=True)
 
 
+def _maybe_disable_spinner(flag: bool) -> None:
+    """子命令里的 --no-spinner。
+
+    只负责「关」，不负责「开」：默认值交给 isatty 自动判断，
+    这样重定向到文件或 CI 里运行时不会硬塞动画。
+    """
+    if flag:
+        ui.configure(False)
+
+
 def _fail(message: str, code: int = 1) -> None:
-    """打印红色错误并以指定退出码结束。"""
+    """打印红色错误并以指定退出码结束。
+
+    先收掉动画行：否则错误文字会和转圈挤在同一行，看起来像输出错乱。
+    """
+    ui.stop()
     typer.secho(f"✗ {message}", fg=typer.colors.RED, err=True)
     raise typer.Exit(code=code)
 
@@ -99,6 +129,7 @@ def _get_clients(*, need_github: bool) -> tuple[GiteeClient, GithubClient | None
         typer.secho(
             "! 未设置 GITEE_TOKEN，只能迁移公开仓库（且批量列表接口会 404）",
             fg=typer.colors.YELLOW,
+            err=True,
         )
 
     return GiteeClient(gitee_token), (GithubClient(github_token) if github_token else None)
@@ -106,20 +137,22 @@ def _get_clients(*, need_github: bool) -> tuple[GiteeClient, GithubClient | None
 
 # ------------------------------------------------------------------ check
 @app.command()
-def check(env_file: EnvFileOpt = None) -> None:
+def check(env_file: EnvFileOpt = None, no_spinner: SpinnerOpt = False) -> None:
     """校验 Gitee / GitHub token 是否可用。"""
     _load_env(env_file)
+    _maybe_disable_spinner(no_spinner)
     gitee_token = os.environ.get("GITEE_TOKEN", "").strip() or None
     github_token = os.environ.get("GITHUB_TOKEN", "").strip()
     code = 0
 
     if gitee_token:
+        ui.start("  · 校验 Gitee token")
         try:
             # /user 是验证 token 最轻的接口
             user = GiteeClient(gitee_token).whoami()
-            typer.secho(f"✓ Gitee token 有效：{user.get('login')}", fg=typer.colors.GREEN)
+            ui.stop(f"✓ Gitee token 有效：{user.get('login')}", fg=typer.colors.GREEN)
         except ApiError as exc:
-            typer.secho(f"✗ Gitee 校验失败：{exc}", fg=typer.colors.RED)
+            ui.stop(f"✗ Gitee 校验失败：{exc}", fg=typer.colors.RED)
             code = 1
     else:
         typer.secho(
@@ -130,11 +163,12 @@ def check(env_file: EnvFileOpt = None) -> None:
     if not github_token:
         typer.secho("✗ 缺少 GITHUB_TOKEN", fg=typer.colors.RED)
         raise typer.Exit(code=1)
+    ui.start("  · 校验 GitHub token")
     try:
         me = GithubClient(github_token).whoami()
-        typer.secho(f"✓ GitHub token 有效：{me.get('login')}", fg=typer.colors.GREEN)
+        ui.stop(f"✓ GitHub token 有效：{me.get('login')}", fg=typer.colors.GREEN)
     except ApiError as exc:
-        typer.secho(f"✗ GitHub 校验失败：{exc}", fg=typer.colors.RED)
+        ui.stop(f"✗ GitHub 校验失败：{exc}", fg=typer.colors.RED)
         code = 1
     raise typer.Exit(code=code)
 
@@ -149,27 +183,40 @@ def list_cmd(
     forks: Annotated[bool, typer.Option("--forks", help="包含 fork 仓库")] = False,
     as_json: Annotated[bool, typer.Option("--json", help="输出 JSON，便于脚本处理")] = False,
     env_file: EnvFileOpt = None,
+    no_spinner: SpinnerOpt = False,
 ) -> None:
     """列出仓库（默认一键列出当前账号的全部仓库，含所属组织）。"""
     _load_env(env_file)
+    _maybe_disable_spinner(no_spinner)
     gitee_token = os.environ.get("GITEE_TOKEN", "").strip() or None
 
     if not gitee_token and not owner:
         _fail("列出全部仓库需要 GITEE_TOKEN，请先配置（或改用 --owner 指定公开账号）", code=2)
 
+    # JSON 结果要能直接喂给 jq：动画关掉，过程行也全部静音
+    if as_json:
+        ui.configure(False)
+        ui.silence()
+        progress_log = lambda _msg: None  # noqa: E731
+    else:
+        progress_log = ui.log
+
     gitee = GiteeClient(gitee_token)
+    ui.start(f"  · 拉取 {owner} 的仓库列表" if owner else "  · 拉取全部仓库（个人 + 所属组织）")
     try:
         if owner:
             repos = gitee.list_repos(owner, include_forks=forks)
         else:
             # 没有 owner：个人仓库 + 所属组织仓库，一次拿全
-            repos = gitee.list_all_repos(include_forks=forks, log=typer.echo)
+            repos = gitee.list_all_repos(include_forks=forks, log=progress_log)
     except ApiError as exc:
         _fail(f"拉取仓库列表失败：{exc}")
         return
+    ui.stop(f"  · 共 {len(repos)} 个仓库")
 
     if not repos:
-        typer.echo("没有找到仓库")
+        # json 模式下也要输出合法 JSON（空数组），否则脚本解析会炸
+        typer.echo("[]" if as_json else "没有找到仓库")
         raise typer.Exit(code=0)
 
     if as_json:
@@ -248,9 +295,11 @@ def migrate(
         bool, typer.Option("--yes", "-y", help="批量迁移时跳过确认提示")
     ] = False,
     env_file: EnvFileOpt = None,
+    no_spinner: SpinnerOpt = False,
 ) -> None:
     """迁移仓库：单个、指定账号，或 --all 一键全量。"""
     _load_env(env_file)
+    _maybe_disable_spinner(no_spinner)
 
     # --- 参数校验：先把明显写错的挡在发请求之前 ---
     if repo and all_repos:
@@ -269,13 +318,14 @@ def migrate(
     gitee, gh = _get_clients(need_github=True)
     assert gh is not None
 
+    ui.start("  · 校验 GitHub token")
     try:
         me = gh.whoami()
     except ApiError as exc:
         _fail(f"无法访问 GitHub，请检查 token：{exc}")
         return
     login = me["login"]
-    typer.echo(f"GitHub 已登录：{login}")
+    ui.stop(f"GitHub 已登录：{login}")
 
     # CLI 参数 -> 迁移选项
     opts = MigrateOptions(
@@ -297,15 +347,17 @@ def migrate(
     if repo:
         sources = [repo]
     else:
+        ui.start("  · 拉取全部仓库（个人 + 所属组织）")
         try:
             if owner:
                 repos = gitee.list_repos(owner, include_forks=forks)
             else:
                 # 一键：当前 token 能访问的全部仓库（个人 + 组织）
-                repos = gitee.list_all_repos(include_forks=forks, log=typer.echo)
+                repos = gitee.list_all_repos(include_forks=forks, log=ui.log)
         except ApiError as exc:
             _fail(f"拉取仓库列表失败：{exc}")
             return
+        ui.stop()
 
         only_names = {s.strip() for s in (only or "").split(",") if s.strip()}
         for item in repos:
@@ -330,7 +382,11 @@ def migrate(
 
     # --- 逐个迁移，单个失败不影响其余 ---
     results: list[RepoResult] = []
-    for source in sources:
+    total = len(sources)
+    for index, source in enumerate(sources, 1):
+        # 多仓库时带序号，一眼看出还剩几个
+        tag = f"[{index}/{total}] " if total > 1 else ""
+        ui.start(f"  · {tag}迁移 {source}")
         try:
             results.append(
                 migrate_repository(
@@ -339,16 +395,19 @@ def migrate(
                     source,
                     github_login=login,
                     opts=opts,
-                    log=typer.echo,
+                    log=ui.log,
                 )
             )
         except KeyboardInterrupt:
             # Ctrl+C 立刻停手，已完成的仓库结果保留
-            typer.echo("\n已中断")
+            ui.stop("! 已中断", fg=typer.colors.YELLOW)
             break
         except Exception as exc:  # noqa: BLE001 - 批量场景要兜住任何意外
-            typer.secho(f"✗ {source} 异常终止：{exc}", fg=typer.colors.RED)
+            ui.stop(f"✗ {source} 异常终止：{exc}", fg=typer.colors.RED)
             results.append(RepoResult(source=source, errors=[str(exc)]))
+        else:
+            # 最后一次 log 还挂在动画行上，收线即把它定格成"这步耗时"
+            ui.stop()
 
     if not results:
         raise typer.Exit(code=1)
@@ -405,6 +464,9 @@ def main(argv: list[str] | None = None) -> int:
         # SystemExit 里塞字符串的情况（理论上不该出现）
         print(code, file=sys.stderr)
         return 1
+    finally:
+        # 兜底：异常退出时也别把半行动画留在屏幕上
+        ui.stop()
     return 0
 
 
