@@ -51,6 +51,25 @@ class GiteeClient(HttpClient):
         kwargs["params"] = params
         return super().request(method, path, **kwargs)
 
+    # ---------------------------------------------------------------- 账号
+    def whoami(self) -> dict[str, Any]:
+        """当前 token 对应的用户，用于确定「默认迁移谁名下的仓库」。"""
+        return self.get("/user")
+
+    def list_orgs(self) -> list[dict[str, Any]]:
+        """列出当前 token 所属的组织。
+
+        组织仓库不在 /user/repos 的返回里，要单独去每个组织下取，
+        所以要先把组织清单拿到手。接口不可用时按「没有组织」处理。
+        """
+        try:
+            return self.paginate("/user/orgs") or []
+        except ApiError as exc:
+            if exc.status in (403, 404):
+                return []
+            raise
+
+
     # ---------------------------------------------------------------- 仓库
     def get_repo(self, owner: str, repo: str) -> dict[str, Any] | None:
         """取仓库元信息；不存在或无权限时返回 None。"""
@@ -85,6 +104,61 @@ class GiteeClient(HttpClient):
                 ) from org_exc
         # fork 默认跳过，避免把别人的仓库整片搬过来
         return [r for r in repos if include_forks or not r.get("fork")]
+
+    def list_all_repos(
+        self, *, include_forks: bool = False, log: Any = None
+    ) -> list[dict[str, Any]]:
+        """列出当前 token 能访问的全部仓库：个人仓库 + 所属组织的仓库。
+
+        这就是「一键拿到所有 Gitee 仓库」的实现：
+        /user/repos 只返回个人名下的仓库，组织仓库要逐个组织去拉，
+        所以先取 /user/orgs，再对每个组织调 /orgs/{org}/repos。
+        某个组织拉取失败只跳过该组织，不影响其余结果。
+
+        Args:
+            include_forks: 是否包含 fork 仓库。
+            log: 可选日志函数，用来提示某个组织拉取失败。
+
+        Returns:
+            去重后的仓库列表（按 full_name 去重）。
+        """
+        if not self.token:
+            raise ApiError("列出全部仓库需要 GITEE_TOKEN，请先配置")
+
+        repos = self.paginate(
+            "/user/repos",
+            params={"type": "all", "sort": "updated", "direction": "desc"},
+        )
+
+        for org in self.list_orgs():
+            org_path = org.get("login") or org.get("path") or org.get("name")
+            if not org_path:
+                continue
+            try:
+                repos.extend(
+                    self.paginate(
+                        f"/orgs/{org_path}/repos",
+                        params={"type": "all", "sort": "updated", "direction": "desc"},
+                    )
+                )
+            except ApiError as exc:
+                # 没有组织仓库权限是常见的，提示一下继续走
+                if log:
+                    log(f"! 跳过组织 {org_path}：{exc}")
+
+        # 同一仓库可能既算个人又算组织（迁移来的 fork），按 full_name 去重
+        seen: set[str] = set()
+        unique: list[dict[str, Any]] = []
+        for repo in repos:
+            key = repo.get("full_name") or repo.get("path") or ""
+            if key and key in seen:
+                continue
+            seen.add(key)
+            if not include_forks and repo.get("fork"):
+                continue
+            unique.append(repo)
+        return unique
+
 
     # ---------------------------------------------------------------- Issue
     def list_issues(self, owner: str, repo: str) -> list[dict[str, Any]]:

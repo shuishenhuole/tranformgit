@@ -1,22 +1,59 @@
-"""命令行入口：参数解析、客户端装配、批量调度、结果汇总。
+"""命令行入口（Typer 实现）。
+
+三个子命令：
+    check    校验两个 token 是否可用
+    list     列出仓库（不带 --owner 时列出 token 能访问的全部仓库）
+    migrate  迁移仓库（单个、指定账号、或一键全量）
 
 退出码约定（方便挂到 CI 或 shell 判断）：
-    0  全部成功
-    1  有仓库迁移失败，或有致命错误（token 无效等）
-    2  参数用法错误
+    0    全部成功
+    1    有仓库迁移失败，或有致命错误（token 无效等）
+    2    参数用法错误
+    130  用户 Ctrl+C 中断
 """
 
 from __future__ import annotations
 
-import argparse
+import json
 import os
 import sys
+from enum import Enum
+from typing import Annotated
+
+import typer
 
 from .config import load_env_file
 from .gitee import GiteeClient
 from .github import GithubClient
 from .http import ApiError
-from .migrate import MigrateOptions, RepoResult, migrate_repository, parse_source
+from .migrate import (
+    MigrateOptions,
+    RepoResult,
+    migrate_repository,
+    parse_source,
+    repo_full_name,
+)
+
+app = typer.Typer(
+    add_completion=False,
+    no_args_is_help=True,
+    context_settings={"help_option_names": ["-h", "--help"]},
+    help="把 Gitee 仓库迁移到 GitHub（代码 + 分支 + tag + Issue + Release）",
+)
+
+
+class Visibility(str, Enum):
+    """目标仓库可见性；auto 表示跟随源仓库。"""
+
+    auto = "auto"
+    public = "public"
+    private = "private"
+
+
+# 多个子命令共用的选项，抽成类型别名减少重复
+EnvFileOpt = Annotated[
+    str | None, typer.Option("--env-file", help="指定 .env 文件路径，默认读取当前目录 .env")
+]
 
 
 def _setup_stdout() -> None:
@@ -28,71 +65,10 @@ def _setup_stdout() -> None:
             pass
 
 
-def log(message: str = "") -> None:
-    """统一的输出口，flush 保证管道/重定向时也能实时看到进度。"""
-    print(message, flush=True)
-
-
-def build_parser() -> argparse.ArgumentParser:
-    """构造命令行解析器（migrate / list / check 三个子命令）。"""
-    parser = argparse.ArgumentParser(
-        prog="reposor-trans",
-        description="把 Gitee 仓库迁移到 GitHub（代码 + 分支 + tag + Issue + Release）",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog=(
-            "示例:\n"
-            "  python main.py migrate --gitee alice/demo\n"
-            "  python main.py migrate --gitee alice/demo --github-owner my-org --visibility private\n"
-            "  python main.py migrate --gitee-owner alice --all --skip-issues\n"
-            "  python main.py list --gitee-owner alice\n"
-        ),
-    )
-    sub = parser.add_subparsers(dest="command", required=True)
-
-    def add_common(sp: argparse.ArgumentParser) -> None:
-        # 每个子命令都支持指定 .env，方便把配置放在别处
-        sp.add_argument("--env-file", help="指定 .env 文件路径，默认读取当前目录 .env")
-
-    # migrate ----------------------------------------------------------
-    m = sub.add_parser("migrate", help="迁移一个或一批仓库")
-    add_common(m)
-    m.add_argument("--gitee", help="源仓库，格式 owner/repo")
-    m.add_argument("--gitee-owner", help="源账号或组织，配合 --all 批量迁移")
-    m.add_argument("--all", action="store_true", help="批量迁移 --gitee-owner 下的全部仓库")
-    m.add_argument("--only", help="批量模式下只迁移这些仓库，逗号分隔")
-    m.add_argument("--include-forks", action="store_true", help="批量模式下包含 fork 仓库")
-    m.add_argument("--github-owner", help="目标 GitHub 账号/组织，默认当前登录用户")
-    m.add_argument("--github-name", help="目标仓库名，默认与源仓库同名")
-    m.add_argument(
-        "--visibility",
-        choices=["auto", "public", "private"],
-        default="auto",
-        help="目标仓库可见性，auto 表示与源仓库一致（默认）",
-    )
-    m.add_argument("--description", help="覆盖目标仓库简介")
-    m.add_argument("--skip-git", action="store_true", help="不迁移代码，只建仓库/Issue")
-    m.add_argument("--skip-issues", action="store_true", help="不迁移 Issue")
-    m.add_argument("--skip-releases", action="store_true", help="不迁移 Release")
-    m.add_argument("--with-assets", action="store_true", help="同时搬运 Release 附件（较慢）")
-    m.add_argument("--no-annotate", action="store_true", help="Issue 正文不加来源说明头")
-    m.add_argument(
-        "--allow-duplicates",
-        action="store_true",
-        help="不跳过目标仓库中已存在同名 Issue（默认会跳过，便于断点续传）",
-    )
-    m.add_argument("--dry-run", action="store_true", help="只打印计划，不做任何写操作")
-
-    # list -------------------------------------------------------------
-    ls = sub.add_parser("list", help="列出 Gitee 账号/组织下的仓库")
-    add_common(ls)
-    ls.add_argument("--gitee-owner", required=True, help="Gitee 账号或组织")
-    ls.add_argument("--include-forks", action="store_true", help="包含 fork 仓库")
-
-    # check ------------------------------------------------------------
-    check = sub.add_parser("check", help="校验 Gitee / GitHub token 是否可用")
-    add_common(check)
-
-    return parser
+def _fail(message: str, code: int = 1) -> None:
+    """打印红色错误并以指定退出码结束。"""
+    typer.secho(f"✗ {message}", fg=typer.colors.RED, err=True)
+    raise typer.Exit(code=code)
 
 
 def _get_clients(*, need_github: bool) -> tuple[GiteeClient, GithubClient | None]:
@@ -105,44 +81,21 @@ def _get_clients(*, need_github: bool) -> tuple[GiteeClient, GithubClient | None
     github_token = os.environ.get("GITHUB_TOKEN", "").strip() or None
 
     if need_github and not github_token:
-        raise SystemExit("缺少 GITHUB_TOKEN，请先设置环境变量或写入 .env")
+        _fail("缺少 GITHUB_TOKEN，请先设置环境变量或写入 .env")
     if not gitee_token:
-        log("! 未设置 GITEE_TOKEN，只能迁移公开仓库（且 API 限流更严格）")
+        typer.secho(
+            "! 未设置 GITEE_TOKEN，只能迁移公开仓库（且批量列表接口会 404）",
+            fg=typer.colors.YELLOW,
+        )
 
     return GiteeClient(gitee_token), (GithubClient(github_token) if github_token else None)
 
 
-def _print_summary(results: list[RepoResult]) -> int:
-    """打印结果表，返回进程退出码。"""
-    failed = [r for r in results if not r.ok]
-    log("\n" + "=" * 72)
-    log("迁移结果")
-    log("=" * 72)
-    for r in results:
-        if not r.ok:
-            log(f"✗ {r.source} -> {r.target or '(未创建)'}")
-            for err in r.errors:
-                log(f"    错误: {err}")
-        else:
-            detail = (
-                f"分支 {r.branches} / tag {r.tags} / Issue {r.issues} "
-                f"(评论 {r.comments}) / Release {r.releases}"
-            )
-            if r.assets:
-                detail += f" / 附件 {r.assets}"
-            log(f"✓ {r.source} -> {r.repo_url}")
-            log(f"    {detail}")
-        # warning 在成功和失败两种情况下都要显示
-        for warn in r.warnings:
-            log(f"    ! {warn}")
-
-    log("-" * 72)
-    log(f"成功 {len(results) - len(failed)} 个，失败 {len(failed)} 个")
-    return 1 if failed else 0
-
-
-def _cmd_check(args: argparse.Namespace) -> int:
-    """校验两个 token 是否可用。"""
+# ------------------------------------------------------------------ check
+@app.command()
+def check(env_file: EnvFileOpt = None) -> None:
+    """校验 Gitee / GitHub token 是否可用。"""
+    load_env_file(env_file)
     gitee_token = os.environ.get("GITEE_TOKEN", "").strip() or None
     github_token = os.environ.get("GITHUB_TOKEN", "").strip()
     code = 0
@@ -150,61 +103,154 @@ def _cmd_check(args: argparse.Namespace) -> int:
     if gitee_token:
         try:
             # /user 是验证 token 最轻的接口
-            user = GiteeClient(gitee_token).get("/user")
-            log(f"✓ Gitee token 有效：{user.get('login')}")
+            user = GiteeClient(gitee_token).whoami()
+            typer.secho(f"✓ Gitee token 有效：{user.get('login')}", fg=typer.colors.GREEN)
         except ApiError as exc:
-            log(f"✗ Gitee 校验失败：{exc}")
+            typer.secho(f"✗ Gitee 校验失败：{exc}", fg=typer.colors.RED)
             code = 1
     else:
-        log("· 未配置 GITEE_TOKEN（只能访问公开仓库，且批量列表接口可能 404）")
+        typer.secho(
+            "· 未配置 GITEE_TOKEN（只能访问公开仓库，且无法列出仓库清单）",
+            fg=typer.colors.YELLOW,
+        )
 
     if not github_token:
-        log("✗ 缺少 GITHUB_TOKEN")
-        return 1
+        typer.secho("✗ 缺少 GITHUB_TOKEN", fg=typer.colors.RED)
+        raise typer.Exit(code=1)
     try:
         me = GithubClient(github_token).whoami()
-        log(f"✓ GitHub token 有效：{me.get('login')}")
+        typer.secho(f"✓ GitHub token 有效：{me.get('login')}", fg=typer.colors.GREEN)
     except ApiError as exc:
-        log(f"✗ GitHub 校验失败：{exc}")
+        typer.secho(f"✗ GitHub 校验失败：{exc}", fg=typer.colors.RED)
         code = 1
-    return code
+    raise typer.Exit(code=code)
 
 
-def _cmd_list(args: argparse.Namespace) -> int:
-    """列出源账号下的仓库，迁移前先看一眼有什么。"""
-    gitee, _ = _get_clients(need_github=False)
+# ------------------------------------------------------------------- list
+@app.command("list")
+def list_cmd(
+    owner: Annotated[
+        str | None,
+        typer.Option("--owner", "-o", help="只看该账号/组织；不填则列出 token 能访问的全部仓库"),
+    ] = None,
+    forks: Annotated[bool, typer.Option("--forks", help="包含 fork 仓库")] = False,
+    as_json: Annotated[bool, typer.Option("--json", help="输出 JSON，便于脚本处理")] = False,
+    env_file: EnvFileOpt = None,
+) -> None:
+    """列出仓库（默认一键列出当前账号的全部仓库，含所属组织）。"""
+    load_env_file(env_file)
+    gitee_token = os.environ.get("GITEE_TOKEN", "").strip() or None
+
+    if not gitee_token and not owner:
+        _fail("列出全部仓库需要 GITEE_TOKEN，请先配置（或改用 --owner 指定公开账号）", code=2)
+
+    gitee = GiteeClient(gitee_token)
     try:
-        repos = gitee.list_repos(args.gitee_owner, include_forks=args.include_forks)
+        if owner:
+            repos = gitee.list_repos(owner, include_forks=forks)
+        else:
+            # 没有 owner：个人仓库 + 所属组织仓库，一次拿全
+            repos = gitee.list_all_repos(include_forks=forks, log=typer.echo)
     except ApiError as exc:
-        log(f"✗ 拉取仓库列表失败：{exc}")
-        return 1
+        _fail(f"拉取仓库列表失败：{exc}")
+        return
 
     if not repos:
-        log("没有找到仓库")
-        return 0
-    for repo in repos:
-        flag = "private" if repo.get("private") else "public"
-        name = repo.get("full_name") or repo.get("path") or ""
-        log(f"{name:<50} {flag:<8} {repo.get('default_branch') or ''}")
-    log(f"\n共 {len(repos)} 个仓库")
-    return 0
+        typer.echo("没有找到仓库")
+        raise typer.Exit(code=0)
+
+    if as_json:
+        # 只保留有用字段，避免把整个 API 响应吐出来
+        payload = [
+            {
+                "full_name": repo_full_name(r),
+                "private": bool(r.get("private")),
+                "fork": bool(r.get("fork")),
+                "default_branch": r.get("default_branch"),
+                "html_url": r.get("html_url"),
+                "description": r.get("description"),
+            }
+            for r in repos
+        ]
+        typer.echo(json.dumps(payload, ensure_ascii=False, indent=2))
+        raise typer.Exit(code=0)
+
+    for item in repos:
+        name = repo_full_name(item) or ""
+        flag = "private" if item.get("private") else "public"
+        fork = " [fork]" if item.get("fork") else ""
+        typer.echo(f"{name:<50} {flag:<8} {item.get('default_branch') or ''}{fork}")
+    typer.echo(f"\n共 {len(repos)} 个仓库")
 
 
-def _cmd_migrate(args: argparse.Namespace) -> int:
-    """迁移主流程：校验参数 -> 装配客户端 -> 逐个迁移 -> 汇总。"""
+# ---------------------------------------------------------------- migrate
+@app.command()
+def migrate(
+    repo: Annotated[
+        str | None, typer.Argument(help="源仓库 owner/repo；使用 --all 时省略")
+    ] = None,
+    all_repos: Annotated[
+        bool,
+        typer.Option("--all", "-a", help="一键迁移当前 Gitee 账号的全部仓库（含所属组织）"),
+    ] = False,
+    owner: Annotated[
+        str | None, typer.Option("--owner", "-o", help="只迁移该账号/组织下的仓库")
+    ] = None,
+    only: Annotated[
+        str | None, typer.Option("--only", help="只迁移这些仓库名，逗号分隔")
+    ] = None,
+    forks: Annotated[bool, typer.Option("--forks", help="批量时包含 fork 仓库")] = False,
+    github_owner: Annotated[
+        str | None, typer.Option("--github-owner", help="目标 GitHub 账号/组织，默认当前登录用户")
+    ] = None,
+    github_name: Annotated[
+        str | None, typer.Option("--github-name", help="目标仓库名，默认与源仓库同名")
+    ] = None,
+    visibility: Annotated[
+        Visibility, typer.Option("--visibility", help="目标仓库可见性，auto 表示跟随源仓库")
+    ] = Visibility.auto,
+    description: Annotated[
+        str | None, typer.Option("--description", help="覆盖目标仓库简介")
+    ] = None,
+    skip_git: Annotated[bool, typer.Option("--skip-git", help="不迁移代码")] = False,
+    skip_issues: Annotated[bool, typer.Option("--skip-issues", help="不迁移 Issue")] = False,
+    skip_releases: Annotated[
+        bool, typer.Option("--skip-releases", help="不迁移 Release")
+    ] = False,
+    with_assets: Annotated[
+        bool, typer.Option("--with-assets", help="同时搬运 Release 附件（较慢）")
+    ] = False,
+    annotate: Annotated[
+        bool,
+        typer.Option("--annotate/--no-annotate", help="Issue 正文是否加来源说明头"),
+    ] = True,
+    allow_duplicates: Annotated[
+        bool,
+        typer.Option("--allow-duplicates", help="不跳过目标仓库已存在的同名 Issue"),
+    ] = False,
+    dry_run: Annotated[
+        bool, typer.Option("--dry-run", help="只打印计划，不做任何写操作")
+    ] = False,
+    yes: Annotated[
+        bool, typer.Option("--yes", "-y", help="批量迁移时跳过确认提示")
+    ] = False,
+    env_file: EnvFileOpt = None,
+) -> None:
+    """迁移仓库：单个、指定账号，或 --all 一键全量。"""
+    load_env_file(env_file)
+
     # --- 参数校验：先把明显写错的挡在发请求之前 ---
-    if not args.gitee and not (args.gitee_owner and args.all):
-        log("✗ 请指定 --gitee owner/repo，或使用 --gitee-owner X --all 批量迁移")
-        return 2
-    if args.gitee and args.all:
-        log("✗ --gitee 与 --all 不能同时使用")
-        return 2
-    if args.gitee:
+    if repo and all_repos:
+        _fail("REPO 参数与 --all 不能同时使用", code=2)
+    if not repo and not all_repos:
+        _fail("请指定 REPO（如 alice/demo），或使用 --all 一键迁移", code=2)
+    if repo:
         try:
-            parse_source(args.gitee)
+            parse_source(repo)
         except ValueError as exc:
-            log(f"✗ {exc}")
-            return 2
+            _fail(str(exc), code=2)
+        if owner:
+            _fail("指定单个 REPO 时不需要 --owner", code=2)
 
     # --- 客户端与身份 ---
     gitee, gh = _get_clients(need_github=True)
@@ -213,51 +259,61 @@ def _cmd_migrate(args: argparse.Namespace) -> int:
     try:
         me = gh.whoami()
     except ApiError as exc:
-        log(f"✗ 无法访问 GitHub，请检查 token：{exc}")
-        return 1
+        _fail(f"无法访问 GitHub，请检查 token：{exc}")
+        return
     login = me["login"]
-    log(f"GitHub 已登录：{login}")
+    typer.echo(f"GitHub 已登录：{login}")
 
-    # CLI 参数 -> 迁移选项（skip_existing 与 allow_duplicates 是反义）
+    # CLI 参数 -> 迁移选项
     opts = MigrateOptions(
-        skip_git=args.skip_git,
-        skip_issues=args.skip_issues,
-        skip_releases=args.skip_releases,
-        skip_existing=not args.allow_duplicates,
-        with_assets=args.with_assets,
-        annotate=not args.no_annotate,
-        visibility=args.visibility,
-        github_name=args.github_name,
-        github_owner=args.github_owner,
-        description=args.description,
-        dry_run=args.dry_run,
+        skip_git=skip_git,
+        skip_issues=skip_issues,
+        skip_releases=skip_releases,
+        skip_existing=not allow_duplicates,
+        with_assets=with_assets,
+        annotate=annotate,
+        visibility=visibility.value,
+        github_name=github_name,
+        github_owner=github_owner,
+        description=description,
+        dry_run=dry_run,
     )
 
     # --- 确定要迁移哪些仓库 ---
     sources: list[str] = []
-    if args.gitee:
-        sources = [args.gitee]
+    if repo:
+        sources = [repo]
     else:
         try:
-            repos = gitee.list_repos(args.gitee_owner, include_forks=args.include_forks)
+            if owner:
+                repos = gitee.list_repos(owner, include_forks=forks)
+            else:
+                # 一键：当前 token 能访问的全部仓库（个人 + 组织）
+                repos = gitee.list_all_repos(include_forks=forks, log=typer.echo)
         except ApiError as exc:
-            log(f"✗ 拉取仓库列表失败：{exc}")
-            return 1
-        # --only 用仓库名过滤，逗号分隔
-        only = {s.strip() for s in (args.only or "").split(",") if s.strip()}
-        for repo in repos:
-            name = repo.get("path") or repo.get("name")
-            if not name:
+            _fail(f"拉取仓库列表失败：{exc}")
+            return
+
+        only_names = {s.strip() for s in (only or "").split(",") if s.strip()}
+        for item in repos:
+            full_name = repo_full_name(item)
+            if not full_name:
                 continue
-            if only and name not in only:
+            name = full_name.split("/")[-1]
+            if only_names and name not in only_names:
                 continue
-            # namespace 比参数更可靠（组织仓库的 owner 可能和传入值大小写不同）
-            owner = (repo.get("namespace") or {}).get("path") or args.gitee_owner
-            sources.append(f"{owner}/{name}")
+            sources.append(full_name)
+
         if not sources:
-            log("没有匹配的仓库")
-            return 0
-        log(f"待迁移 {len(sources)} 个仓库：{', '.join(sources)}")
+            typer.echo("没有匹配的仓库")
+            raise typer.Exit(code=0)
+        typer.echo(f"待迁移 {len(sources)} 个仓库：{', '.join(sources)}")
+
+        # 批量操作影响面大，非 --yes 时确认一次；非交互环境（管道/CI）直接跳过
+        if len(sources) > 1 and not yes and sys.stdin.isatty():
+            if not typer.confirm(f"确认迁移这 {len(sources)} 个仓库？"):
+                typer.echo("已取消")
+                raise typer.Exit(code=0)
 
     # --- 逐个迁移，单个失败不影响其余 ---
     results: list[RepoResult] = []
@@ -270,41 +326,73 @@ def _cmd_migrate(args: argparse.Namespace) -> int:
                     source,
                     github_login=login,
                     opts=opts,
-                    log=log,
+                    log=typer.echo,
                 )
             )
         except KeyboardInterrupt:
             # Ctrl+C 立刻停手，已完成的仓库结果保留
-            log("\n已中断")
+            typer.echo("\n已中断")
             break
         except Exception as exc:  # noqa: BLE001 - 批量场景要兜住任何意外
-            log(f"✗ {source} 异常终止：{exc}")
+            typer.secho(f"✗ {source} 异常终止：{exc}", fg=typer.colors.RED)
             results.append(RepoResult(source=source, errors=[str(exc)]))
 
     if not results:
-        return 1
-    return _print_summary(results)
+        raise typer.Exit(code=1)
+    raise typer.Exit(code=_print_summary(results))
 
 
+def _print_summary(results: list[RepoResult]) -> int:
+    """打印结果表，返回进程退出码。"""
+    failed = [r for r in results if not r.ok]
+    typer.echo("\n" + "=" * 72)
+    typer.echo("迁移结果")
+    typer.echo("=" * 72)
+    for r in results:
+        if not r.ok:
+            typer.secho(f"✗ {r.source} -> {r.target or '(未创建)'}", fg=typer.colors.RED)
+            for err in r.errors:
+                typer.echo(f"    错误: {err}")
+        else:
+            detail = (
+                f"分支 {r.branches} / tag {r.tags} / Issue {r.issues} "
+                f"(评论 {r.comments}) / Release {r.releases}"
+            )
+            if r.assets:
+                detail += f" / 附件 {r.assets}"
+            typer.secho(f"✓ {r.source} -> {r.repo_url}", fg=typer.colors.GREEN)
+            typer.echo(f"    {detail}")
+        # warning 在成功和失败两种情况下都要显示
+        for warn in r.warnings:
+            typer.secho(f"    ! {warn}", fg=typer.colors.YELLOW)
+
+    typer.echo("-" * 72)
+    typer.echo(f"成功 {len(results) - len(failed)} 个，失败 {len(failed)} 个")
+    return 1 if failed else 0
+
+
+# ------------------------------------------------------------------- main
 def main(argv: list[str] | None = None) -> int:
-    """CLI 总入口，返回退出码。"""
+    """CLI 总入口，返回退出码。
+
+    这里让 Typer 保持 standalone_mode（默认值），再把它的 SystemExit 转成
+    返回值。好处是不用关心 Typer 内部用的是哪个 click（0.2x 起 typer 自带
+    一份 vendored click，直接捕获 click.ClickException 是抓不到的），
+    参数错误、--help、Ctrl+C 都由它自己处理好，我们只管退出码。
+    """
     _setup_stdout()
-    parser = build_parser()
-    args = parser.parse_args(argv)
-
-    # 先加载 .env，再读环境变量，否则文件里的 token 用不上
-    env_path = load_env_file(getattr(args, "env_file", None))
-    if env_path:
-        log(f"已加载环境变量: {env_path}")
-
-    if args.command == "migrate":
-        return _cmd_migrate(args)
-    if args.command == "list":
-        return _cmd_list(args)
-    if args.command == "check":
-        return _cmd_check(args)
-    parser.print_help()
-    return 2
+    try:
+        app(args=argv)
+    except SystemExit as exc:
+        code = exc.code
+        if code is None:
+            return 0
+        if isinstance(code, int):
+            return code
+        # SystemExit 里塞字符串的情况（理论上不该出现）
+        print(code, file=sys.stderr)
+        return 1
+    return 0
 
 
 if __name__ == "__main__":

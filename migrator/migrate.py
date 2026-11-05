@@ -91,6 +91,22 @@ def parse_source(value: str) -> tuple[str, str]:
     return parts[-2], parts[-1]
 
 
+def repo_full_name(repo: dict[str, Any]) -> str | None:
+    """从 Gitee 的仓库对象里取出 owner/name 形式的全名。
+
+    批量迁移时用它把 API 返回的字典转回 --gitee 能接受的字符串。
+    full_name 通常已经是 "owner/repo"，缺失时再拼 namespace + path。
+    """
+    full = repo.get("full_name") or ""
+    if "/" in full:
+        return full
+    namespace = (repo.get("namespace") or {}).get("path")
+    name = repo.get("path") or repo.get("name")
+    if namespace and name:
+        return f"{namespace}/{name}"
+    return None
+
+
 def _normalize_color(color: str | None) -> str:
     """Gitee 的标签颜色转成 GitHub 要的 6 位十六进制。
 
