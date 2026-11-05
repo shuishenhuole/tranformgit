@@ -1,0 +1,13 @@
+[project]
+name = "reposor-trans"
+version = "0.1.0"
+description = "把 Gitee 仓库迁移到 GitHub（代码 + 分支 + tag + Issue + Release）"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["httpx>=0.27"]
+
+[project.scripts]
+reposor-trans = "migrator.cli:main"
+
+[tool.setuptools]
+packages = ["migrator"]

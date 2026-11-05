@@ -1,0 +1,16 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# 本地配置：有 GITEE_TOKEN / GITHUB_TOKEN，绝不提交
+.env
+
+# 本地 AI 工作区数据
+.workbuddy/
