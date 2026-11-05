@@ -65,6 +65,19 @@ def _setup_stdout() -> None:
             pass
 
 
+def _load_env(env_file: str | None) -> None:
+    """加载 .env 并提示结果。
+
+    显式指定路径却没找到时给个警告：否则用户拼错路径会以为 token 没生效，
+    排查半天才发现是文件名的问题。
+    """
+    loaded = load_env_file(env_file)
+    if loaded:
+        typer.echo(f"已加载环境变量: {loaded}")
+    elif env_file:
+        typer.secho(f"! 指定的 .env 不存在: {env_file}", fg=typer.colors.YELLOW, err=True)
+
+
 def _fail(message: str, code: int = 1) -> None:
     """打印红色错误并以指定退出码结束。"""
     typer.secho(f"✗ {message}", fg=typer.colors.RED, err=True)
@@ -95,7 +108,7 @@ def _get_clients(*, need_github: bool) -> tuple[GiteeClient, GithubClient | None
 @app.command()
 def check(env_file: EnvFileOpt = None) -> None:
     """校验 Gitee / GitHub token 是否可用。"""
-    load_env_file(env_file)
+    _load_env(env_file)
     gitee_token = os.environ.get("GITEE_TOKEN", "").strip() or None
     github_token = os.environ.get("GITHUB_TOKEN", "").strip()
     code = 0
@@ -138,7 +151,7 @@ def list_cmd(
     env_file: EnvFileOpt = None,
 ) -> None:
     """列出仓库（默认一键列出当前账号的全部仓库，含所属组织）。"""
-    load_env_file(env_file)
+    _load_env(env_file)
     gitee_token = os.environ.get("GITEE_TOKEN", "").strip() or None
 
     if not gitee_token and not owner:
@@ -237,7 +250,7 @@ def migrate(
     env_file: EnvFileOpt = None,
 ) -> None:
     """迁移仓库：单个、指定账号，或 --all 一键全量。"""
-    load_env_file(env_file)
+    _load_env(env_file)
 
     # --- 参数校验：先把明显写错的挡在发请求之前 ---
     if repo and all_repos:

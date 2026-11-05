@@ -21,9 +21,11 @@ Issue 正文会加上来源说明头，评论会标注原作者和原始时间�
 ## 安装
 
 ```bash
-pip install -e .        # 装依赖（typer、httpx），并生成 reposor-trans 命令
-# 或者只装依赖，用 python main.py 运行：
-pip install typer httpx
+pip install -e .        # 装依赖（typer、httpx、python-dotenv），并生成 reposor-trans 命令
+# 或者用 uv（仓库里有 uv.lock）：
+uv sync
+# 也可以只装依赖，用 python main.py 运行：
+pip install typer httpx python-dotenv
 git --version           # 需要本机有 git
 ```
 
@@ -152,5 +154,5 @@ migrator/
   github.py            GitHub REST API 封装
   git_ops.py           git 命令封装（镜像克隆、强推、凭证注入、LFS）
   http.py              httpx 客户端基类（重试、限流退避、分页）
-  config.py            极简 .env 读取
+  config.py            .env 加载（python-dotenv，环境变量优先）
 ```
