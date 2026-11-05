@@ -1,6 +1,6 @@
 # reposor-trans
 
-把 Gitee 仓库迁移到 GitHub 的命令行工具。Python + `Typer` + `httpx` + `git`，不依赖 Gitee 的导出功能。
+把 Gitee 仓库迁移到 GitHub 的命令行工具。Python + `Typer` + `httpx` + `rich` + `git`，不依赖 Gitee 的导出功能。
 
 ## 迁移内容
 
@@ -21,11 +21,11 @@ Issue 正文会加上来源说明头，评论会标注原作者和原始时间�
 ## 安装
 
 ```bash
-pip install -e .        # 装依赖（typer、httpx、python-dotenv），并生成 reposor-trans 命令
+pip install -e .        # 装依赖（typer、httpx、python-dotenv、rich），并生成 reposor-trans 命令
 # 或者用 uv（仓库里有 uv.lock）：
 uv sync
 # 也可以只装依赖，用 python main.py 运行：
-pip install typer httpx python-dotenv
+pip install typer httpx python-dotenv rich
 git --version           # 需要本机有 git
 ```
 
@@ -116,13 +116,13 @@ python main.py migrate your-name/my-repo --dry-run
 ⠹ 迁移 26 个 Issue  6s
 ```
 
-每一行都是「上一步跑完后定格」的，所以既是过程日志，也是一张耗时表；5 秒内完成的步骤不显示秒数，免得满屏 `0.0s`。
+实现在 `migrator/ui.py`，基于 **rich.progress**：`SpinnerColumn` + `TextColumn` + 一个把耗时显示成 `8.4s` 的小列。重绘、擦除、终端宽度、编码、Windows 控制台适配都由 rich 负责，本工具只决定「什么时候该落定哪一行」——所以每一行既是过程日志，也顺手是一张耗时表；0.5 秒内完成的步骤不显示秒数，免得满屏 `0.0s`。
 
 不适用的场景会自动关闭，不需要额外配置：
 
 | 场景 | 行为 |
 | --- | --- |
-| 输出被重定向（管道、写文件） | 自动关闭，退回逐行输出，不会往文件里塞 `\r` |
+| 输出被重定向（管道、写文件） | 自动关闭，退回逐行输出，不会往文件里塞控制字符 |
 | `CI=true` 或 `TERM=dumb` | 自动关闭 |
 | `list --json` | 动画和过程日志全部静音，stdout 只有 JSON |
 | `--no-spinner` | 手动关闭；写在子命令前后都行 |
@@ -130,7 +130,7 @@ python main.py migrate your-name/my-repo --dry-run
 两个可选环境变量：
 
 ```bash
-SPINNER_ASCII=1   # 字体显示不出盲文点时换成 |/-\
+SPINNER_ASCII=1   # 字体显示不出盲文点时换成 -\|/ 转圈
 NO_SPINNER=1      # 等价于 --no-spinner
 ```
 
@@ -187,5 +187,5 @@ migrator/
   git_ops.py           git 命令封装（镜像克隆、强推、凭证注入、LFS）
   http.py              httpx 客户端基类（重试、限流退避、分页）
   config.py            .env 加载（python-dotenv，环境变量优先）
-  ui.py                等待动画与日志输出（单行刷新 + 定格耗时）
+  ui.py                等待动画与日志输出（rich.progress，落定时带耗时）
 ```
