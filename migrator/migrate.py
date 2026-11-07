@@ -11,6 +11,7 @@
 
 from __future__ import annotations
 
+import json
 import tempfile
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -105,6 +106,46 @@ def repo_full_name(repo: dict[str, Any]) -> str | None:
     if namespace and name:
         return f"{namespace}/{name}"
     return None
+
+
+def sources_from_json(
+    path: str | Path,
+    *,
+    owner: str | None = None,
+    include_forks: bool = False,
+) -> list[str]:
+    """从 JSON 清单文件读取要迁移的仓库，返回 owner/repo 列表。
+
+    文件格式与 `list --json` 落盘的 gitee.json 一致：
+        [ {"full_name": "owner/repo", "private": true, "fork": false, ...}, ... ]
+    手工整理的同格式文件也可以。没有 full_name 的条目直接跳过；
+    fork 默认排除（与 API 批量行为一致），owner 传入时只保留该账号/组织下的仓库。
+    """
+    try:
+        raw = Path(path).read_text(encoding="utf-8")
+    except OSError as exc:
+        raise ValueError(f"无法读取文件：{exc}") from exc
+    try:
+        entries = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"不是合法的 JSON：{exc}") from exc
+    if not isinstance(entries, list):
+        raise ValueError('JSON 顶层应是数组，例如 [{"full_name": "owner/repo", ...}]')
+
+    sources: list[str] = []
+    for entry in entries:
+        if not isinstance(entry, dict):
+            continue
+        full = repo_full_name(entry)
+        if not full:
+            continue
+        if not include_forks and entry.get("fork"):
+            continue
+        if owner and full.split("/", 1)[0] != owner:
+            continue
+        if full not in sources:  # 清单可能手工合并过，顺手去重
+            sources.append(full)
+    return sources
 
 
 def _normalize_color(color: str | None) -> str:

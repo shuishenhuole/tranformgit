@@ -3,7 +3,7 @@
 三个子命令：
     check    校验两个 token 是否可用
     list     列出仓库（不带 --owner 时列出 token 能访问的全部仓库）
-    migrate  迁移仓库（单个、指定账号、或一键全量）
+    migrate  迁移仓库（单个、指定账号、一键全量、或按 JSON 清单）
 
 退出码约定（方便挂到 CI 或 shell 判断）：
     0    全部成功
@@ -34,6 +34,7 @@ from .migrate import (
     migrate_repository,
     parse_source,
     repo_full_name,
+    sources_from_json,
 )
 
 app = typer.Typer(
@@ -277,6 +278,14 @@ def migrate(
             "--all", "-a", help="一键迁移当前 Gitee 账号的全部仓库（含所属组织）"
         ),
     ] = False,
+    from_json: Annotated[
+        str | None,
+        typer.Option(
+            "--from-json",
+            help="按 JSON 清单迁移（list --json 导出的 gitee.json 或同格式文件），"
+            "值为清单文件路径",
+        ),
+    ] = None,
     owner: Annotated[
         str | None, typer.Option("--owner", "-o", help="只迁移该账号/组织下的仓库")
     ] = None,
@@ -327,15 +336,19 @@ def migrate(
     env_file: EnvFileOpt = None,
     no_spinner: SpinnerOpt = False,
 ) -> None:
-    """迁移仓库：单个、指定账号，或 --all 一键全量。"""
+    """迁移仓库：单个、指定账号、--all 一键全量，或 --from-json 按清单文件。"""
     _load_env(env_file)
     _maybe_disable_spinner(no_spinner)
 
     # --- 参数校验：先把明显写错的挡在发请求之前 ---
     if repo and all_repos:
         _fail("REPO 参数与 --all 不能同时使用", code=2)
-    if not repo and not all_repos:
-        _fail("请指定 REPO（如 alice/demo），或使用 --all 一键迁移", code=2)
+    if repo and from_json:
+        _fail("REPO 参数与 --from-json 不能同时使用", code=2)
+    if all_repos and from_json:
+        _fail("--all 与 --from-json 不能同时使用，两者都是批量来源", code=2)
+    if not repo and not all_repos and not from_json:
+        _fail("请指定 REPO（如 alice/demo），或使用 --all / --from-json 批量迁移", code=2)
     if repo:
         try:
             parse_source(repo)
@@ -343,6 +356,16 @@ def migrate(
             _fail(str(exc), code=2)
         if owner:
             _fail("指定单个 REPO 时不需要 --owner", code=2)
+
+    # JSON 清单在碰网络之前先读好：文件不存在或格式不对能立刻报错
+    json_sources: list[str] | None = None
+    if from_json:
+        try:
+            json_sources = sources_from_json(
+                from_json, owner=owner, include_forks=forks
+            )
+        except (OSError, ValueError) as exc:
+            _fail(f"读取仓库清单失败：{exc}", code=2)
 
     # --- 客户端与身份 ---
     gitee, gh = _get_clients(need_github=True)
@@ -376,6 +399,9 @@ def migrate(
     sources: list[str] = []
     if repo:
         sources = [repo]
+    elif json_sources is not None:
+        # 来源是 --from-json：清单已在参数校验阶段读好
+        sources = json_sources
     else:
         ui.start("  · 拉取全部仓库（个人 + 所属组织）")
         try:
@@ -388,16 +414,16 @@ def migrate(
             _fail(f"拉取仓库列表失败：{exc}")
             return
         ui.stop()
-
-        only_names = {s.strip() for s in (only or "").split(",") if s.strip()}
         for item in repos:
             full_name = repo_full_name(item)
-            if not full_name:
-                continue
-            name = full_name.split("/")[-1]
-            if only_names and name not in only_names:
-                continue
-            sources.append(full_name)
+            if full_name:
+                sources.append(full_name)
+
+    if not repo:
+        # 批量模式公共收尾：--only 过滤 -> 空清单提示 -> 确认
+        only_names = {s.strip() for s in (only or "").split(",") if s.strip()}
+        if only_names:
+            sources = [s for s in sources if s.split("/")[-1] in only_names]
 
         if not sources:
             typer.echo("没有匹配的仓库")

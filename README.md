@@ -53,6 +53,33 @@ python main.py migrate --all     # 把上面这些仓库全迁到 GitHub
 
 `--all` 会先从 `/user/repos` 取个人仓库，再遍历 `/user/orgs` 逐个组织取仓库，按 `full_name` 去重后依次迁移。仓库多于一个时会先弹一次确认，管道/CI 环境自动跳过确认（也可以加 `-y` 显式跳过）。
 
+## 按 JSON 清单迁移
+
+不想每次都从 API 拉清单，或想把迁移范围固定成一个可编辑的文件时，先用 `list --json` 导出清单，再交给 `migrate --from-json`：
+
+```bash
+python main.py list --json                  # 导出 gitee.json 到当前目录
+python main.py migrate --from-json gitee.json
+python main.py migrate --from-json my.json --only repo-a,repo-b -o your-name
+```
+
+清单格式（手工整理同格式的文件也可以）：
+
+```json
+[
+  {
+    "full_name": "shuishenhuole2024/obsidian",
+    "private": true,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/obsidian.git",
+    "description": ""
+  }
+]
+```
+
+清单只负责圈定迁移哪些仓库（读 `full_name`，其余字段仅备查），实际迁移仍会逐个访问 Gitee API，私有仓库照样需要 `GITEE_TOKEN`。`--owner` / `--only` / `--forks` 这些批量过滤参数照常生效（`--owner` 按 `full_name` 的 owner 段过滤，fork 默认排除），批量确认与 `--all` 相同；`--all` 不能与 `--from-json` 同时使用。
+
 ## 用法
 
 ```bash
@@ -99,6 +126,9 @@ python main.py migrate --all -o my-org
 # 全量里只挑几个
 python main.py migrate --all --only repo-a,repo-b
 
+# 按 list --json 导出的清单迁移（可先手工删掉不想迁的条目）
+python main.py migrate --from-json gitee.json
+
 # 先干跑看看计划，不写任何东西
 python main.py migrate your-name/my-repo --dry-run
 ```
@@ -140,7 +170,8 @@ NO_SPINNER=1      # 等价于 --no-spinner
 | --- | --- |
 | `REPO`（位置参数） | 源仓库，写 `owner/repo`，也接受 `https://gitee.com/owner/repo.git` |
 | `--all, -a` | 一键迁移当前账号全部仓库（含所属组织） |
-| `--owner, -o` | 只处理该账号/组织的仓库（配合 `--all`） |
+| `--from-json FILE` | 按 JSON 清单迁移，代替从 API 拉取（清单可由 `list --json` 生成或手工整理） |
+| `--owner, -o` | 只处理该账号/组织的仓库（配合 `--all` / `--from-json`） |
 | `--only a,b` | 批量模式下只迁指定仓库名 |
 | `--forks` | 批量时包含 fork |
 | `--github-owner` | 目标账号/组织，默认当前 token 的登录用户 |
