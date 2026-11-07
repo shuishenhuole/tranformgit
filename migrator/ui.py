@@ -77,7 +77,9 @@ class Spinner:
     def __init__(self, console: Console | None = None) -> None:
         # 日志里会出现 "[1/2]" 这种方括号，不能被当成富文本标签
         # （markup=False 也可以挡掉用户仓库名里带的方括号）
-        self._console = console or Console(markup=False, highlight=False, soft_wrap=False)
+        self._console = console or Console(
+            markup=False, highlight=False, soft_wrap=False
+        )
         self.enabled = _autodetect()
         self._progress = Progress(
             SpinnerColumn(self._spinner_name()),
@@ -190,7 +192,9 @@ class Spinner:
         self._message = None
 
         elapsed = time.monotonic() - started
-        text = f"{message}  {elapsed:.1f}s" if elapsed >= _SHOW_ELAPSED_AFTER else message
+        text = (
+            f"{message}  {elapsed:.1f}s" if elapsed >= _SHOW_ELAPSED_AFTER else message
+        )
         self._write_line(text, color)
 
     def _write_line(self, text: str, color: str | None) -> None:

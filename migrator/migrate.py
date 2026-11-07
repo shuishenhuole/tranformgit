@@ -124,7 +124,9 @@ def _fmt_time(value: str | None) -> str:
     if not value:
         return "未知时间"
     try:
-        return datetime.fromisoformat(value.replace("Z", "+00:00")).strftime("%Y-%m-%d %H:%M")
+        return datetime.fromisoformat(value.replace("Z", "+00:00")).strftime(
+            "%Y-%m-%d %H:%M"
+        )
     except ValueError:
         return value
 
@@ -371,12 +373,20 @@ def migrate_repository(
 
     # auto 表示跟随源仓库；显式指定时以参数为准
     private = (
-        bool(info.get("private")) if opts.visibility == "auto" else opts.visibility == "private"
+        bool(info.get("private"))
+        if opts.visibility == "auto"
+        else opts.visibility == "private"
     )
-    description = opts.description if opts.description is not None else (info.get("description") or "")
+    description = (
+        opts.description
+        if opts.description is not None
+        else (info.get("description") or "")
+    )
     homepage = info.get("homepage") or ""
 
-    log(f"\n▶ {src_owner}/{src_repo}  ->  {result.target}  ({'private' if private else 'public'})")
+    log(
+        f"\n▶ {src_owner}/{src_repo}  ->  {result.target}  ({'private' if private else 'public'})"
+    )
 
     # 1) 目标仓库：已存在就复用，保证脚本可重跑
     try:
@@ -392,7 +402,9 @@ def migrate_repository(
                 description=description,
                 homepage=homepage,
                 # 只有目标不是当前登录用户时才走组织接口
-                org=target_owner if target_owner.lower() != github_login.lower() else None,
+                org=target_owner
+                if target_owner.lower() != github_login.lower()
+                else None,
             )
             log("  ✓ 已创建目标仓库")
     except ApiError as exc:
@@ -441,14 +453,22 @@ def migrate_repository(
     elif opts.dry_run:
         log("  · [dry-run] 将迁移 Issue / Release")
     else:
-        _migrate_issues(gitee, gh, (src_owner, src_repo), (target_owner, name), opts, result, log)
+        _migrate_issues(
+            gitee, gh, (src_owner, src_repo), (target_owner, name), opts, result, log
+        )
 
         # 5) Release 依赖 tag 已经推上去，所以放在代码迁移之后
         if opts.skip_releases:
             log("  · 跳过 Release 迁移")
         else:
             _migrate_releases(
-                gitee, gh, (src_owner, src_repo), (target_owner, name), opts, result, log
+                gitee,
+                gh,
+                (src_owner, src_repo),
+                (target_owner, name),
+                opts,
+                result,
+                log,
             )
 
     return result

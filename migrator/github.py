@@ -148,9 +148,13 @@ class GithubClient(HttpClient):
             json={"state": "closed", "state_reason": "completed"},
         )
 
-    def create_comment(self, owner: str, name: str, number: int, body: str) -> dict[str, Any]:
+    def create_comment(
+        self, owner: str, name: str, number: int, body: str
+    ) -> dict[str, Any]:
         """在指定 Issue 下追加评论。"""
-        return self.post(f"/repos/{owner}/{name}/issues/{number}/comments", json={"body": body})
+        return self.post(
+            f"/repos/{owner}/{name}/issues/{number}/comments", json={"body": body}
+        )
 
     # ------------------------------------------------------------- Release
     def create_release(
@@ -222,8 +226,12 @@ def download_to(url: str, dest: Path, *, token: str | None = None) -> None:
         headers["Authorization"] = f"Bearer {token}"
     dest.parent.mkdir(parents=True, exist_ok=True)
     try:
-        with httpx.Client(headers=headers, follow_redirects=True, trust_env=True) as client:
-            with client.stream("GET", url, timeout=httpx.Timeout(600.0, connect=15.0)) as resp:
+        with httpx.Client(
+            headers=headers, follow_redirects=True, trust_env=True
+        ) as client:
+            with client.stream(
+                "GET", url, timeout=httpx.Timeout(600.0, connect=15.0)
+            ) as resp:
                 if resp.status_code >= 400:
                     raise ApiError(
                         f"下载失败 {url} -> {resp.status_code}",

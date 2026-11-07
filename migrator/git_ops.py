@@ -96,7 +96,9 @@ def _count_refs(mirror_dir: Path) -> tuple[int, int]:
 
     裸仓库不能用 `git branch`，只能用 for-each-ref。
     """
-    code, out = _run(["git", "-C", str(mirror_dir), "for-each-ref", "--format=%(refname)"])
+    code, out = _run(
+        ["git", "-C", str(mirror_dir), "for-each-ref", "--format=%(refname)"]
+    )
     if code != 0:
         return 0, 0
     branches = sum(1 for line in out.splitlines() if line.startswith("refs/heads/"))
@@ -146,7 +148,9 @@ def mirror_repository(
         GitError: 克隆或推送失败（消息里的 token 已脱敏）。
     """
     src = with_credentials(source_url, source_username or "oauth2", source_token)
-    dst = with_credentials(target_url, target_username or "x-access-token", target_token)
+    dst = with_credentials(
+        target_url, target_username or "x-access-token", target_token
+    )
     secrets = [s for s in (source_token, target_token) if s]
 
     # workdir 为空说明是临时目录，函数退出时要负责清理
@@ -181,7 +185,9 @@ def mirror_repository(
         if _uses_lfs(mirror_dir):
             if has_lfs():
                 log("  · 检测到 Git LFS，拉取全部 LFS 对象（可能较慢）")
-                code, out = _run(["git", "-C", str(mirror_dir), "lfs", "fetch", "--all"])
+                code, out = _run(
+                    ["git", "-C", str(mirror_dir), "lfs", "fetch", "--all"]
+                )
                 if code != 0:
                     # LFS 失败不致命，至少代码历史还在
                     log(f"  ! LFS 拉取失败，继续推送指针: {mask(out[:300], secrets)}")

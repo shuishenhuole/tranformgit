@@ -69,13 +69,14 @@ class GiteeClient(HttpClient):
                 return []
             raise
 
-
     # ---------------------------------------------------------------- 仓库
     def get_repo(self, owner: str, repo: str) -> dict[str, Any] | None:
         """取仓库元信息；不存在或无权限时返回 None。"""
         return self.get(f"/repos/{owner}/{repo}", allow_404=True)
 
-    def list_repos(self, owner: str, *, include_forks: bool = False) -> list[dict[str, Any]]:
+    def list_repos(
+        self, owner: str, *, include_forks: bool = False
+    ) -> list[dict[str, Any]]:
         """列出账号或组织下的仓库。
 
         Gitee 没有统一的「按 owner 列仓库」接口：普通用户走 /users/{owner}，
@@ -159,7 +160,6 @@ class GiteeClient(HttpClient):
             unique.append(repo)
         return unique
 
-
     # ---------------------------------------------------------------- Issue
     def list_issues(self, owner: str, repo: str) -> list[dict[str, Any]]:
         """取全部 Issue（含已关闭），按创建时间升序。
@@ -173,7 +173,9 @@ class GiteeClient(HttpClient):
         # Gitee 的 issues 接口可能混入 PR，GB 那边的分页也会混，统一过滤
         return [i for i in issues if not i.get("pull_request")]
 
-    def list_issue_comments(self, owner: str, repo: str, number: int) -> list[dict[str, Any]]:
+    def list_issue_comments(
+        self, owner: str, repo: str, number: int
+    ) -> list[dict[str, Any]]:
         """取某个 Issue 的全部评论，按时间升序以便保持对话顺序。"""
         return self.paginate(
             f"/repos/{owner}/{repo}/issues/{number}/comments",

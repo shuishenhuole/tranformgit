@@ -1,0 +1,626 @@
+[
+  {
+    "full_name": "shuishenhuole2024/obsidian",
+    "private": true,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/obsidian.git",
+    "description": ""
+  },
+  {
+    "full_name": "shuishenhuole2024/tranformgit",
+    "private": false,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/tranformgit.git",
+    "description": ""
+  },
+  {
+    "full_name": "shuishenhuole2024/davio",
+    "private": true,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/davio.git",
+    "description": "基于flutter的webdav工具"
+  },
+  {
+    "full_name": "shuishenhuole2024/blog-vben",
+    "private": true,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/blog-vben.git",
+    "description": "基于vben给自己网站搭建的后台管理系统"
+  },
+  {
+    "full_name": "shuishenhuole2024/blog-backproject",
+    "private": true,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/blog-backproject.git",
+    "description": "个人网站的后端"
+  },
+  {
+    "full_name": "shuishenhuole2024/blog-nuxt",
+    "private": true,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/blog-nuxt.git",
+    "description": "网站的客户端用nuxt构建"
+  },
+  {
+    "full_name": "shuishenhuole2024/storeanalyse",
+    "private": false,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/storeanalyse.git",
+    "description": "一个 Windows 平台的磁盘空间分析桌面工具,定位类似 SpaceSniffer / WizTree: 并行扫描目录树,实时展示扫描进度,并以大文件列表、类型统计和 Treemap 矩形树三种视角帮你找出占空间的\"元凶\"。"
+  },
+  {
+    "full_name": "shuishenhuole2024/enroment-learn",
+    "private": true,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/enroment-learn.git",
+    "description": ""
+  },
+  {
+    "full_name": "shuishenhuole2024/agent-backend",
+    "private": true,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/agent-backend.git",
+    "description": ""
+  },
+  {
+    "full_name": "shuishenhuole2024/draw",
+    "private": true,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/draw.git",
+    "description": ""
+  },
+  {
+    "full_name": "shuishenhuole2024/maoqiuriji",
+    "private": true,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/maoqiuriji.git",
+    "description": "毛球日记"
+  },
+  {
+    "full_name": "shuishenhuole2024/task",
+    "private": true,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/task.git",
+    "description": "为鸿蒙用户打造的任务管理app"
+  },
+  {
+    "full_name": "shuishenhuole2024/blog-uni",
+    "private": true,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/blog-uni.git",
+    "description": "使用uniapp开发的博客前端现在主要用于微信小程序"
+  },
+  {
+    "full_name": "shuishenhuole2024/mygame",
+    "private": true,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/mygame.git",
+    "description": ""
+  },
+  {
+    "full_name": "shuishenhuole2024/majian",
+    "private": true,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/majian.git",
+    "description": "鸿蒙的markdown编辑器app"
+  },
+  {
+    "full_name": "shuishenhuole2024/codeanalyse",
+    "private": false,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/codeanalyse.git",
+    "description": "一个轻量级的 Python 命令行工具，用于统计项目中各编程语言的代码行数。"
+  },
+  {
+    "full_name": "shuishenhuole2024/algorithm",
+    "private": false,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/algorithm.git",
+    "description": ""
+  },
+  {
+    "full_name": "shuishenhuole2024/intro",
+    "private": true,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/intro.git",
+    "description": "一个介绍自己的网站"
+  },
+  {
+    "full_name": "shuishenhuole2024/monkey",
+    "private": false,
+    "fork": false,
+    "default_branch": "main",
+    "html_url": "https://gitee.com/shuishenhuole2024/monkey.git",
+    "description": "monkey编程语言解释器"
+  },
+  {
+    "full_name": "shuishenhuole2024/ascf",
+    "private": true,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/ascf.git",
+    "description": ""
+  },
+  {
+    "full_name": "shuishenhuole2024/notes",
+    "private": true,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/notes.git",
+    "description": "我的编程学习笔记，记录我的成长！"
+  },
+  {
+    "full_name": "shuishenhuole2024/blog-harmonyos",
+    "private": true,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/blog-harmonyos.git",
+    "description": "我的鸿蒙版博客，。。。。。。。。。。。。。。。"
+  },
+  {
+    "full_name": "shuishenhuole2024/hds-tabs-improve",
+    "private": false,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/hds-tabs-improve.git",
+    "description": "沉浸式液态指示器TabBar"
+  },
+  {
+    "full_name": "shuishenhuole2024/mg-aide",
+    "private": true,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/mg-aide.git",
+    "description": ""
+  },
+  {
+    "full_name": "shuishenhuole2024/mgaide-vben",
+    "private": true,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/mgaide-vben.git",
+    "description": ""
+  },
+  {
+    "full_name": "shuishenhuole2024/mg-aide-back",
+    "private": true,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/mg-aide-back.git",
+    "description": ""
+  },
+  {
+    "full_name": "shuishenhuole2024/HarmonyOS",
+    "private": true,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/HarmonyOS.git",
+    "description": "用于管理applinking链接的跳转"
+  },
+  {
+    "full_name": "shuishenhuole2024/env",
+    "private": true,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/env.git",
+    "description": "我的开发环境"
+  },
+  {
+    "full_name": "shuishenhuole2024/agent-mandarin",
+    "private": true,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/agent-mandarin.git",
+    "description": ""
+  },
+  {
+    "full_name": "shuishenhuole2024/hdd",
+    "private": true,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/hdd.git",
+    "description": ""
+  },
+  {
+    "full_name": "shuishenhuole2024/agent",
+    "private": true,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/agent.git",
+    "description": "一个智能体项目"
+  },
+  {
+    "full_name": "shuishenhuole2024/flask-blog",
+    "private": true,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/flask-blog.git",
+    "description": "我的flask作业."
+  },
+  {
+    "full_name": "shuishenhuole2024/skills",
+    "private": true,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/skills.git",
+    "description": "关于我使用agent的一些skills"
+  },
+  {
+    "full_name": "shuishenhuole2024/falsk-work",
+    "private": false,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/falsk-work.git",
+    "description": "用来做作业"
+  },
+  {
+    "full_name": "shuishenhuole2024/go-learn",
+    "private": true,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/go-learn.git",
+    "description": ""
+  },
+  {
+    "full_name": "shuishenhuole2024/agent-learn",
+    "private": true,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/agent-learn.git",
+    "description": ""
+  },
+  {
+    "full_name": "shuishenhuole2024/gzf",
+    "private": true,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/gzf.git",
+    "description": ""
+  },
+  {
+    "full_name": "shuishenhuole2024/llmrag",
+    "private": true,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/llmrag.git",
+    "description": ""
+  },
+  {
+    "full_name": "shuishenhuole2024/resume",
+    "private": true,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/resume.git",
+    "description": ""
+  },
+  {
+    "full_name": "shuishenhuole2024/lmp-card",
+    "private": true,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/lmp-card.git",
+    "description": "阿落的名片"
+  },
+  {
+    "full_name": "shuishenhuole2024/wezterm",
+    "private": false,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/wezterm.git",
+    "description": "我的wezterm配置"
+  },
+  {
+    "full_name": "shuishenhuole2024/ebook",
+    "private": true,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/ebook.git",
+    "description": "我将来出版的鸿蒙教材"
+  },
+  {
+    "full_name": "luo-qing-hua/lun-gitee",
+    "private": false,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/luo-qing-hua/lun-gitee.git",
+    "description": ""
+  },
+  {
+    "full_name": "shuishenhuole2024/playground",
+    "private": true,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/playground.git",
+    "description": "playground"
+  },
+  {
+    "full_name": "shuishenhuole2024/cloud",
+    "private": true,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/cloud.git",
+    "description": "用于水深火乐的数据存储"
+  },
+  {
+    "full_name": "shuishenhuole2024/web",
+    "private": true,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/web.git",
+    "description": ""
+  },
+  {
+    "full_name": "vicluo668/vayro",
+    "private": true,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/vicluo668/vayro.git",
+    "description": ""
+  },
+  {
+    "full_name": "shuishenhuole2024/myppt",
+    "private": true,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/myppt.git",
+    "description": ""
+  },
+  {
+    "full_name": "shuishenhuole2024/BreakPoint",
+    "private": false,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/BreakPoint.git",
+    "description": "BreakPoint 是一个专为 HarmonyOS（鸿蒙）应用设计的响应式断点管理工具。它提供了简单优雅的 API，帮助开发者轻松实现基于屏幕宽度的响应式布局。"
+  },
+  {
+    "full_name": "shuishenhuole2024/BulletChat",
+    "private": false,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/BulletChat.git",
+    "description": "这是一款基于 HarmonyOS 开发的创新性手持弹幕应用组件专为粉丝应援场景打造！它不仅仅是一个简单的文字展示工具，更融入了鸿蒙生态独特的 分布式能力与交互乐趣，使其具备了极高的 可玩性和便捷性。核心亮点在于其独创的 “碰一碰”和 “抓一抓”分享功能，让应援信息的传递瞬间完成，心意即刻同步！"
+  },
+  {
+    "full_name": "shuishenhuole2024/DlpAntPeep",
+    "private": false,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/DlpAntPeep.git",
+    "description": "借助HarmonyOS6.0 的防窥保护组件，开发工作真正实现了化繁为简。其高度封装的 API 使复杂的 AI 防窥逻辑变得清晰易懂，让开发者能轻松驾驭这面智能盾牌。"
+  },
+  {
+    "full_name": "vicluo668/test",
+    "private": true,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/vicluo668/test.git",
+    "description": ""
+  },
+  {
+    "full_name": "shuishenhuole2024/learn",
+    "private": true,
+    "fork": false,
+    "default_branch": "main",
+    "html_url": "https://gitee.com/shuishenhuole2024/learn.git",
+    "description": ""
+  },
+  {
+    "full_name": "shuishenhuole2024/scan",
+    "private": true,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/scan.git",
+    "description": "鸿蒙的文档扫描app"
+  },
+  {
+    "full_name": "shuishenhuole2024/design",
+    "private": false,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/design.git",
+    "description": "python的设计模式学习"
+  },
+  {
+    "full_name": "shuishenhuole2024/blog-yuan",
+    "private": true,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/blog-yuan.git",
+    "description": ""
+  },
+  {
+    "full_name": "shuishenhuole2024/pet-care",
+    "private": true,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/pet-care.git",
+    "description": "宠物智能关怀系统"
+  },
+  {
+    "full_name": "shuishenhuole2024/suiji",
+    "private": true,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/suiji.git",
+    "description": "岁迹"
+  },
+  {
+    "full_name": "shuishenhuole2024/reading",
+    "private": true,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/reading.git",
+    "description": "我的小说创作仓库"
+  },
+  {
+    "full_name": "shuishenhuole2024/harmonyos-innovation-game",
+    "private": true,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/harmonyos-innovation-game.git",
+    "description": ""
+  },
+  {
+    "full_name": "shuishenhuole2024/deyu",
+    "private": true,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/deyu.git",
+    "description": "一个德语仓库给sister用"
+  },
+  {
+    "full_name": "shuishenhuole2024/game",
+    "private": false,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/game.git",
+    "description": ""
+  },
+  {
+    "full_name": "shuishenhuole2024/kankanbei",
+    "private": false,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/kankanbei.git",
+    "description": "还在为找不到赏心悦目的视觉享受而烦恼？快来体验这款超棒的软件！这里是一个充满魅力的 “小姐姐世界”，拥有海量精心挑选的小姐姐高清图片，每一张都能让你眼前一亮，满足你的视觉喜好。\r\n\r\n"
+  },
+  {
+    "full_name": "shuishenhuole2024/working",
+    "private": true,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/working.git",
+    "description": "我的一般工作目录"
+  },
+  {
+    "full_name": "hsf_3/mpsdoc",
+    "private": false,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/hsf_3/mpsdoc.git",
+    "description": ""
+  },
+  {
+    "full_name": "shuishenhuole2024/svc",
+    "private": true,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/svc.git",
+    "description": "基于java的新服务"
+  },
+  {
+    "full_name": "Clock966/exam_ui",
+    "private": true,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/Clock966/exam_ui.git",
+    "description": "exam系统vue前端"
+  },
+  {
+    "full_name": "shuishenhuole2024/houseedit",
+    "private": true,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/houseedit.git",
+    "description": "1111111111111111111111111111111111111111111111111111111111111111"
+  },
+  {
+    "full_name": "shuishenhuole2024/danzi-house---mini-program",
+    "private": true,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/danzi-house---mini-program.git",
+    "description": ""
+  },
+  {
+    "full_name": "shuishenhuole2024/ppt",
+    "private": true,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/ppt.git",
+    "description": ""
+  },
+  {
+    "full_name": "shuishenhuole2024/qinshi",
+    "private": true,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/qinshi.git",
+    "description": ""
+  },
+  {
+    "full_name": "shuishenhuole2024/qinshi_back",
+    "private": true,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/qinshi_back.git",
+    "description": ""
+  },
+  {
+    "full_name": "shuishenhuole2024/danzi-house---backend",
+    "private": true,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/danzi-house---backend.git",
+    "description": ""
+  },
+  {
+    "full_name": "shuishenhuole2024/aicoding",
+    "private": true,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/aicoding.git",
+    "description": ""
+  },
+  {
+    "full_name": "shuishenhuole2024/campus-map",
+    "private": true,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/campus-map.git",
+    "description": ""
+  },
+  {
+    "full_name": "shuishenhuole2024/blog-front-end",
+    "private": true,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/blog-front-end.git",
+    "description": ""
+  },
+  {
+    "full_name": "shuishenhuole2024/xiaochengxu",
+    "private": true,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/xiaochengxu.git",
+    "description": ""
+  },
+  {
+    "full_name": "shuishenhuole2024/school-life",
+    "private": true,
+    "fork": false,
+    "default_branch": "master",
+    "html_url": "https://gitee.com/shuishenhuole2024/school-life.git",
+    "description": ""
+  }
+]

@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import json
 import os
+from pathlib import Path
 import sys
 from enum import Enum
 from typing import Annotated
@@ -53,7 +54,8 @@ class Visibility(str, Enum):
 
 # 多个子命令共用的选项，抽成类型别名减少重复
 EnvFileOpt = Annotated[
-    str | None, typer.Option("--env-file", help="指定 .env 文件路径，默认读取当前目录 .env")
+    str | None,
+    typer.Option("--env-file", help="指定 .env 文件路径，默认读取当前目录 .env"),
 ]
 
 # 子命令里也放一份 --no-spinner：习惯把选项写在命令后面的人不会踩坑
@@ -91,7 +93,9 @@ def _load_env(env_file: str | None) -> None:
         # 走 stderr：这是诊断信息，不能混进 list --json 的 stdout
         typer.echo(f"已加载环境变量: {loaded}", err=True)
     elif env_file:
-        typer.secho(f"! 指定的 .env 不存在: {env_file}", fg=typer.colors.YELLOW, err=True)
+        typer.secho(
+            f"! 指定的 .env 不存在: {env_file}", fg=typer.colors.YELLOW, err=True
+        )
 
 
 def _maybe_disable_spinner(flag: bool) -> None:
@@ -132,7 +136,9 @@ def _get_clients(*, need_github: bool) -> tuple[GiteeClient, GithubClient | None
             err=True,
         )
 
-    return GiteeClient(gitee_token), (GithubClient(github_token) if github_token else None)
+    return GiteeClient(gitee_token), (
+        GithubClient(github_token) if github_token else None
+    )
 
 
 # ------------------------------------------------------------------ check
@@ -178,10 +184,14 @@ def check(env_file: EnvFileOpt = None, no_spinner: SpinnerOpt = False) -> None:
 def list_cmd(
     owner: Annotated[
         str | None,
-        typer.Option("--owner", "-o", help="只看该账号/组织；不填则列出 token 能访问的全部仓库"),
+        typer.Option(
+            "--owner", "-o", help="只看该账号/组织；不填则列出 token 能访问的全部仓库"
+        ),
     ] = None,
     forks: Annotated[bool, typer.Option("--forks", help="包含 fork 仓库")] = False,
-    as_json: Annotated[bool, typer.Option("--json", help="输出 JSON，便于脚本处理")] = False,
+    as_json: Annotated[
+        bool, typer.Option("--json", help="输出 JSON，便于脚本处理")
+    ] = False,
     env_file: EnvFileOpt = None,
     no_spinner: SpinnerOpt = False,
 ) -> None:
@@ -191,7 +201,10 @@ def list_cmd(
     gitee_token = os.environ.get("GITEE_TOKEN", "").strip() or None
 
     if not gitee_token and not owner:
-        _fail("列出全部仓库需要 GITEE_TOKEN，请先配置（或改用 --owner 指定公开账号）", code=2)
+        _fail(
+            "列出全部仓库需要 GITEE_TOKEN，请先配置（或改用 --owner 指定公开账号）",
+            code=2,
+        )
 
     # JSON 结果要能直接喂给 jq：动画关掉，过程行也全部静音
     if as_json:
@@ -202,7 +215,11 @@ def list_cmd(
         progress_log = ui.log
 
     gitee = GiteeClient(gitee_token)
-    ui.start(f"  · 拉取 {owner} 的仓库列表" if owner else "  · 拉取全部仓库（个人 + 所属组织）")
+    ui.start(
+        f"  · 拉取 {owner} 的仓库列表"
+        if owner
+        else "  · 拉取全部仓库（个人 + 所属组织）"
+    )
     try:
         if owner:
             repos = gitee.list_repos(owner, include_forks=forks)
@@ -232,7 +249,12 @@ def list_cmd(
             }
             for r in repos
         ]
-        typer.echo(json.dumps(payload, ensure_ascii=False, indent=2))
+        json_serialized = json.dumps(payload, ensure_ascii=False, indent=2)
+        typer.echo(json_serialized)
+        gitee_json_path = Path().cwd() / "gitee.json"
+        with open(gitee_json_path, "w", encoding="utf-8") as f:
+            json.dump(payload, f, ensure_ascii=False, indent=2)
+        typer.echo(f"save ok {gitee_json_path}")
         raise typer.Exit(code=0)
 
     for item in repos:
@@ -251,7 +273,9 @@ def migrate(
     ] = None,
     all_repos: Annotated[
         bool,
-        typer.Option("--all", "-a", help="一键迁移当前 Gitee 账号的全部仓库（含所属组织）"),
+        typer.Option(
+            "--all", "-a", help="一键迁移当前 Gitee 账号的全部仓库（含所属组织）"
+        ),
     ] = False,
     owner: Annotated[
         str | None, typer.Option("--owner", "-o", help="只迁移该账号/组织下的仓库")
@@ -259,21 +283,27 @@ def migrate(
     only: Annotated[
         str | None, typer.Option("--only", help="只迁移这些仓库名，逗号分隔")
     ] = None,
-    forks: Annotated[bool, typer.Option("--forks", help="批量时包含 fork 仓库")] = False,
+    forks: Annotated[
+        bool, typer.Option("--forks", help="批量时包含 fork 仓库")
+    ] = False,
     github_owner: Annotated[
-        str | None, typer.Option("--github-owner", help="目标 GitHub 账号/组织，默认当前登录用户")
+        str | None,
+        typer.Option("--github-owner", help="目标 GitHub 账号/组织，默认当前登录用户"),
     ] = None,
     github_name: Annotated[
         str | None, typer.Option("--github-name", help="目标仓库名，默认与源仓库同名")
     ] = None,
     visibility: Annotated[
-        Visibility, typer.Option("--visibility", help="目标仓库可见性，auto 表示跟随源仓库")
+        Visibility,
+        typer.Option("--visibility", help="目标仓库可见性，auto 表示跟随源仓库"),
     ] = Visibility.auto,
     description: Annotated[
         str | None, typer.Option("--description", help="覆盖目标仓库简介")
     ] = None,
     skip_git: Annotated[bool, typer.Option("--skip-git", help="不迁移代码")] = False,
-    skip_issues: Annotated[bool, typer.Option("--skip-issues", help="不迁移 Issue")] = False,
+    skip_issues: Annotated[
+        bool, typer.Option("--skip-issues", help="不迁移 Issue")
+    ] = False,
     skip_releases: Annotated[
         bool, typer.Option("--skip-releases", help="不迁移 Release")
     ] = False,
@@ -422,7 +452,9 @@ def _print_summary(results: list[RepoResult]) -> int:
     typer.echo("=" * 72)
     for r in results:
         if not r.ok:
-            typer.secho(f"✗ {r.source} -> {r.target or '(未创建)'}", fg=typer.colors.RED)
+            typer.secho(
+                f"✗ {r.source} -> {r.target or '(未创建)'}", fg=typer.colors.RED
+            )
             for err in r.errors:
                 typer.echo(f"    错误: {err}")
         else:
